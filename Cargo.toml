@@ -1,0 +1,10 @@
+[package]
+name = "rfn"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+anyhow = "1.0.95"
+clap = "4.5.28"
+crossterm = "0.28.1"
+ropey = "1.6.1"
