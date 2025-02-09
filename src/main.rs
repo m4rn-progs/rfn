@@ -28,28 +28,51 @@ fn main() -> anyhow::Result<()> {
     let mut cx: u16 = 0;
     let mut cy: u16 = 0;
     let mut mode = Mode::Sun;
+    let mut scroll_offset: usize = 0;
     terminal::enable_raw_mode()?;
     execute!(stdout(), terminal::EnterAlternateScreen)?;
     execute!(stdout(), terminal::Clear(terminal::ClearType::All))?;
-    stdout().execute(cursor::MoveTo(cx, cy));
-    let scrheight = terminal::size()?.1;
+    execute!(stdout(), cursor::MoveTo(0, 0)).unwrap();
+    let scrheight: usize = terminal::size()?.1.into();
     let mut file = Rope::from_reader(BufReader::new(fs::File::open(file_name)?))?;
-    for current_row in 0..scrheight {
-        if <u16 as Into<usize>>::into(current_row) < file.len_lines() {
-            print!("{}\r\n", file.line(current_row.into()));
-        } else {
-            print!("~\r\n");
-        }
-    }
     for b in stdin().bytes() {
         let c = b.unwrap() as char;
-        if c == 'q' {
-            break;
+        match c {
+            'q' => break,
+            'k' => {
+                if cy > 0 {
+                    cy -= 1;
+                } else if scroll_offset > 0 {
+                    scroll_offset -= 1;
+                }
+            }
+            'j' => {
+                if cy > 0 {
+                    cy += 1;
+                } else if scrheight + scroll_offset < file.len_lines() {
+                    scroll_offset += 1;
+                }
+            }
+            _ => {}
         }
+        draw(&file, scroll_offset, scrheight);
+        stdout().flush().unwrap();
     }
-
     shutdown();
     Ok(())
+}
+
+fn draw(file: &Rope, scroll_offset: usize, scrheight: usize) {
+    execute!(stdout(), terminal::Clear(terminal::ClearType::All));
+    for current_row in 0..scrheight {
+        let line_idx = scroll_offset + current_row;
+        if line_idx < file.len_lines() {
+            print!("{}\r", file.line(line_idx));
+        } else {
+            print!("~\r");
+        }
+    }
+    stdout().flush().unwrap();
 }
 
 fn shutdown() {
