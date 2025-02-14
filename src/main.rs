@@ -13,6 +13,9 @@ use std::env::args_os;
 use std::ffi::OsString;
 use std::fs;
 use std::io::{stdin, stdout, BufReader, BufWriter, Read, Stdin, Write};
+mod draw;
+mod mouse;
+
 enum Mode {
     Sun,
     Moon,
@@ -34,69 +37,44 @@ fn main() -> anyhow::Result<()> {
     let mut cx: u16 = 0;
     let mut cy: u16 = 0;
     let mut mode = Mode::Sun;
-    let mut scroll_offset: usize = 0;
+    let mut scroll_offset = 0usize;
     terminal::enable_raw_mode()?;
     execute!(stdout(), terminal::EnterAlternateScreen)?;
     execute!(stdout(), terminal::Clear(terminal::ClearType::All))?;
     execute!(stdout(), cursor::MoveTo(0, 0)).unwrap();
     let scrheight: usize = terminal::size()?.1.into();
     let mut file = Rope::from_reader(BufReader::new(fs::File::open(file_name)?))?;
-    draw(&mut file, scroll_offset, scrheight, cx, cy);
-    for b in stdin().bytes() {
-        let c = b.unwrap() as char;
-        match c {
-            'q' => break,
-            'k' => {
-                if cy > 0 {
-                    execute!(stdout(), cursor::MoveUp(1)).unwrap();
-                    cy -= 1;
-                } else if scroll_offset > 0 {
-                    scroll_offset -= 1;
-                    draw(&mut file, scroll_offset, scrheight, cx, cy);
-                    stdout().flush().unwrap();
-                }
-            }
-            'j' => {
-                if file.len_lines() < scrheight {
-                    if usize::from(cy) > file.len_lines().saturating_sub(1) {
-                        execute!(stdout(), cursor::MoveDown(1)).unwrap();
-                        cy += 1;
-                    }
-                } else {
-                    if usize::from(cy) >= scrheight {
-                        execute!(stdout(), cursor::MoveDown(1)).unwrap();
-                        cy += 1;
-                    } else if scrheight + scroll_offset < file.len_lines() {
+    let line_count = file.len_lines();
+    let backend = CrosstermBackend::new(stdout());
+    let mut screen = Terminal::new(backend)?;
+    execute!(stdout(), event::EnableMouseCapture).unwrap();
+    loop {
+        draw::draw(&mut screen, &mut file, line_count, scroll_offset);
+        if let event::Event::Key(key) = event::read()? {
+            match key.code {
+                event::KeyCode::Char('q') => break, // Quit
+                event::KeyCode::Char('j') => {
+                    if scroll_offset + 1 < line_count {
                         scroll_offset += 1;
-                        draw(&mut file, scroll_offset, scrheight, cx, cy);
-                        stdout().flush().unwrap();
                     }
                 }
+                event::KeyCode::Char('k') => {
+                    if scroll_offset > 0 {
+                        scroll_offset -= 1;
+                    }
+                }
+                _ => {}
             }
-            _ => {}
         }
-        //draw(&mut file, scroll_offset, scrheight, cx, cy);
-        stdout().flush().unwrap();
+        mouse::scan(&line_count, &mut scroll_offset);
     }
+
     shutdown();
     Ok(())
 }
 
-fn draw(file: &mut Rope, scroll_offset: usize, scrheight: usize, cx: u16, cy: u16) {
-    execute!(stdout(), terminal::Clear(terminal::ClearType::All));
-    //execute!(stdout(), cursor::MoveTo(cx, cy));
-    for current_row in 0..scrheight - 1 {
-        let line_idx = scroll_offset + current_row;
-        if line_idx < file.len_lines() {
-            print!("{}\r", file.line(line_idx));
-        } else {
-            print!("~\r\n");
-        }
-    }
-    stdout().flush().unwrap();
-}
-
 fn shutdown() {
-    execute!(stdout(), terminal::LeaveAlternateScreen);
+    execute!(stdout(), terminal::LeaveAlternateScreen).unwrap();
     terminal::disable_raw_mode();
+    execute!(stdout(), event::DisableMouseCapture).unwrap();
 }
