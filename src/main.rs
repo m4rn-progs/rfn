@@ -15,6 +15,8 @@ use std::fs;
 use std::io::{stdin, stdout, BufReader, BufWriter, Read, Stdin, Write};
 mod draw;
 mod mouse;
+mod shutdown;
+use shutdown::shutdown;
 
 enum Mode {
     Sun,
@@ -71,10 +73,4 @@ fn main() -> anyhow::Result<()> {
 
     shutdown();
     Ok(())
-}
-
-fn shutdown() {
-    execute!(stdout(), terminal::LeaveAlternateScreen).unwrap();
-    terminal::disable_raw_mode();
-    execute!(stdout(), event::DisableMouseCapture).unwrap();
 }

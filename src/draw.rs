@@ -33,7 +33,7 @@ pub fn draw<T: ratatui::backend::Backend>(
             .style(
                 Style::default()
                     .fg(Color::White)
-                    .bg(Color::Rgb(115, 17, 30)),
+                    .bg(Color::Rgb(241, 14, 14)),
             );
         frame.render_widget(paragraph, size);
     });
