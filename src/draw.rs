@@ -1,4 +1,4 @@
-use crate::mode::Mode;
+use crate::modal::Mode;
 use crossterm::{cursor, event, execute, terminal, ExecutableCommand};
 use ratatui::{
     backend::CrosstermBackend,
@@ -44,7 +44,7 @@ pub fn draw<T: ratatui::backend::Backend>(
             .style(
                 Style::default()
                     .fg(Color::White)
-                    .bg(Color::Rgb(241, 14, 14)),
+                    .bg(Color::Rgb(193, 11, 11)),
             );
         frame.render_widget(paragraph, size);
     });
