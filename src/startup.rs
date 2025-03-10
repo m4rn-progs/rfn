@@ -1,4 +1,5 @@
-use crate::modal::mode::Mode;
+use crate::modal::Mode;
+use crate::properties::Editor;
 use crossterm::{cursor, event, execute, terminal, ExecutableCommand};
 use ratatui::{
     backend::CrosstermBackend,
@@ -14,17 +15,6 @@ use std::fs;
 use std::io::{stdin, stdout, BufReader, BufWriter, Read, Stdin, Write};
 use std::{env::args_os, fs::File};
 
-pub struct Editor<T: ratatui::backend::Backend> {
-    pub cx: u16,
-    pub cy: u16,
-    pub scrheight: usize,
-    pub scroll_offset: usize,
-    pub file_name: OsString,
-    pub line_count: usize,
-    pub file: Rope,
-    pub screen: Terminal<T>,
-    pub mode: Mode,
-}
 pub fn startup() -> Editor<CrosstermBackend<std::io::Stdout>> {
     let args: Vec<OsString> = args_os().collect();
     let osfile_name: &OsString = &args[1];
@@ -34,11 +24,11 @@ pub fn startup() -> Editor<CrosstermBackend<std::io::Stdout>> {
     let dimensions = terminal::size().unwrap();
     let screenheight: usize = dimensions.1.into();
     let file_line_count = osfile.len_lines();
-    terminal::enable_raw_mode();
-    execute!(stdout(), terminal::EnterAlternateScreen);
-    execute!(stdout(), terminal::Clear(terminal::ClearType::All));
+    let _ = terminal::enable_raw_mode();
+    execute!(stdout(), terminal::EnterAlternateScreen).unwrap();
+    execute!(stdout(), terminal::Clear(terminal::ClearType::All)).unwrap();
     execute!(stdout(), event::EnableMouseCapture).unwrap();
-    let mut editor = Editor {
+    Editor {
         cx: 0,
         cy: 0,
         scrheight: screenheight,
@@ -48,6 +38,6 @@ pub fn startup() -> Editor<CrosstermBackend<std::io::Stdout>> {
         file: osfile,
         screen: osscreen,
         mode: Mode::Sun,
-    };
-    editor
+        quit: false,
+    }
 }
