@@ -10,14 +10,12 @@ use startup::startup;
 mod inputs;
 mod modal;
 mod properties;
-fn main() -> anyhow::Result<()> {
+fn main() {
     let mut ed = startup();
     while !ed.quit {
         draw::draw(&mut ed);
         inputs::inputs(&mut ed);
-        mouse::scan(&ed.line_count, &mut ed.scroll_offset);
+        mouse::scan(&mut ed);
     }
-
     shutdown();
-    Ok(())
 }

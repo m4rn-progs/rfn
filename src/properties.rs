@@ -15,10 +15,15 @@ use std::io::{stdin, stdout, BufReader, BufWriter, Read, Stdin, Write};
 use std::{env::args_os, fs::File};
 
 pub struct Editor<T: ratatui::backend::Backend> {
-    pub cx: u16,
-    pub cy: u16,
+    pub cx: usize,
+    pub cy: usize,
+    pub rcx: usize,
+    pub rcy: usize,
+    pub pref: usize,
     pub scrheight: usize,
-    pub scroll_offset: usize,
+    pub scrwidth: usize,
+    pub x_offset: usize,
+    pub y_offset: usize,
     pub file_name: OsString,
     pub line_count: usize,
     pub file: Rope,
